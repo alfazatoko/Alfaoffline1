@@ -270,6 +270,48 @@
     box-shadow: 0 3px 10px rgba(43,103,246,0.30);
 }
 
+/* ===== DATE FILTER ROW ===== */
+.date-filter-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.date-filter-row input[type="date"] {
+    flex: 2;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1.5px solid #dde4f5;
+    font-size: 11px;
+    font-weight: 600;
+    background: white;
+    color: var(--dark);
+    outline: none;
+    box-shadow: 0 2px 6px rgba(43,103,246,0.06);
+}
+.date-filter-row input[type="date"]:focus {
+    border-color: var(--primary);
+}
+.date-filter-row button {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2b67f6, #1a4fc4);
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(43,103,246,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.date-filter-row button:active {
+    transform: scale(0.96);
+}
+
 /* ===== SECTION TITLE ===== */
 .section-title {
     background: linear-gradient(135deg, #2c3e50, #34495e);
@@ -679,9 +721,12 @@
 
         <!-- ===== HISTORY PAGE ===== -->
         <div id="page-history" class="page">
-            <!-- Search & Date -->
+            <!-- Search & Date dengan tombol Setel -->
+            <div class="date-filter-row">
+                <input type="date" id="f-tgl-history" onchange="simpanTanggalHistory()">
+                <button onclick="filterRiwayat()"><i class="fa-solid fa-magnifying-glass"></i> Setel</button>
+            </div>
             <div class="history-search-row">
-                <input type="date" id="f-tgl" onchange="filterRiwayat()">
                 <input type="text" id="f-cari" placeholder="🔍 Cari..." onkeyup="filterRiwayat()">
             </div>
 
@@ -740,6 +785,11 @@
 
         <!-- ===== REPORT PAGE ===== -->
         <div id="page-report" class="page">
+            <!-- Filter Tanggal dengan tombol Setel -->
+            <div class="date-filter-row">
+                <input type="date" id="f-tgl-report" onchange="simpanTanggalReport()">
+                <button onclick="hitungLaporan()"><i class="fa-solid fa-magnifying-glass"></i> Setel</button>
+            </div>
             <div id="rep-area"></div>
         </div>
 
@@ -898,7 +948,7 @@ function exitAppSafely(){
 }
 
 // ==================== DATA & STATE ====================
-let mainDB = JSON.parse(localStorage.getItem('alfaza_v14_7')) || {
+let mainDB = JSON.parse(localStorage.getItem('alfaza_v14_8')) || {
     "KASIR 01": { bank:0, cash:0, tarik:0, aks:0, admin:0, loginTime: "", tr:[], ts:[] },
     "KASIR 02": { bank:0, cash:0, tarik:0, aks:0, admin:0, loginTime: "", tr:[], ts:[] }
 };
@@ -920,13 +970,17 @@ function prosesLogin() {
         document.getElementById('main-app').style.display = 'block';
         document.getElementById('disp-user').innerText = currentUser;
         document.getElementById('disp-login').innerText = db.loginTime;
-        document.getElementById('f-tgl').valueAsDate = new Date();
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('f-tgl-history').value = today;
+        document.getElementById('f-tgl-report').value = today;
 
         const jamNow = new Date().getHours();
         document.getElementById('disp-shift').innerText = (jamNow >= 6 && jamNow < 15) ? "Pagi" : "Malam";
 
         initEvents();
         refresh();
+        filterRiwayat();
     } else { gsAlert('PIN SALAH! Coba lagi.', '❌ Gagal Masuk'); }
 }
 
@@ -965,6 +1019,15 @@ function formatAngka(angka) { return angka.replace(/\D/g,'').replace(/\B(?=(\d{3
 function fmt(el) { let v = el.value.replace(/\D/g,''); el.value = v ? new Intl.NumberFormat('id-ID').format(v) : ''; }
 function toInt(v) { return parseInt(v.toString().replace(/\D/g,'')) || 0; }
 function fmtN(v) { return new Intl.NumberFormat('id-ID').format(v); }
+
+// ==================== FUNGSI TANGGAL ====================
+function simpanTanggalHistory() {
+    // Tidak perlu melakukan apa-apa, tanggal akan digunakan saat tombol Setel diklik
+}
+
+function simpanTanggalReport() {
+    // Tidak perlu melakukan apa-apa, tanggal akan digunakan saat tombol Setel diklik
+}
 
 // ==================== NAVIGATION ====================
 function bukaPage(pg, el) {
@@ -1091,11 +1154,11 @@ function updateFilterActive(selector, el) {
 
 // ==================== FILTER RIWAYAT ====================
 function filterRiwayat() {
-    const tgl = document.getElementById('f-tgl').value;
+    const tgl = document.getElementById('f-tgl-history').value;
     const cari = document.getElementById('f-cari').value.toLowerCase();
     let hTr = '', hTs = '';
 
-    // Ambil semua transaksi hari ini, balik urutan agar kronologis (pagi = no.1)
+    // Ambil semua transaksi untuk tanggal yang dipilih, balik urutan agar kronologis (pagi = no.1)
     const allForDate = [...db.tr.filter(i => i.tgl === tgl)].reverse();
 
     // Map warna per kategori
@@ -1172,7 +1235,7 @@ function filterRiwayat() {
 
 // ==================== LAPORAN ====================
 function hitungLaporan() {
-    const tgl = document.getElementById('f-tgl').value;
+    const tgl = document.getElementById('f-tgl-report').value;
     const fTr = db.tr.filter(x => x.tgl === tgl);
     const fTs = db.ts.filter(x => x.tgl === tgl);
 
@@ -1293,7 +1356,7 @@ function hitungLaporan() {
 
 // ==================== SHARE TEKS (WhatsApp / SMS / dll) ====================
 async function shareLaporanTeks() {
-    const tgl = document.getElementById('f-tgl').value;
+    const tgl = document.getElementById('f-tgl-report').value;
     const fTr = db.tr.filter(x => x.tgl === tgl);
     const fTs = db.ts.filter(x => x.tgl === tgl);
     
@@ -1405,7 +1468,7 @@ function refresh() {
     document.getElementById('s-tarik').innerText = fmtN(db.tarik);
     document.getElementById('s-aks').innerText = fmtN(db.aks);
     document.getElementById('s-admin').innerText = fmtN(db.admin);
-    localStorage.setItem('alfaza_v14_7', JSON.stringify(mainDB));
+    localStorage.setItem('alfaza_v14_8', JSON.stringify(mainDB));
 }
 
 // ==================== RESET ====================
@@ -1416,7 +1479,7 @@ async function resetSaldo() {
             mainDB[k].bank = 0; mainDB[k].cash = 0;
             mainDB[k].tarik = 0; mainDB[k].aks = 0; mainDB[k].admin = 0;
         });
-        localStorage.setItem('alfaza_v14_7', JSON.stringify(mainDB));
+        localStorage.setItem('alfaza_v14_8', JSON.stringify(mainDB));
         refresh();
         await gsAlert('Saldo telah direset ke 0', '✅ Berhasil');
     }
